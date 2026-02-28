@@ -7,37 +7,38 @@ import (
 )
 
 type Greeter interface {
-	Greet(name string) (string, error)
+	greet(name string) (string, error)
 }
 
 type GreetCounter struct {
 	count int
-	mu sync.Mutex	
+	mu    sync.Mutex
 }
 
-func (s *GreetCounter) Greet(name string) (string, error) {
+func (s *GreetCounter) greet(name string) (string, error) {
 	if name == "" {
-		return "", fmt.Errorf("name cannot be empty")
+		return "", fmt.Errorf("name cannnot be empty")
 	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.count++
+	s.count = s.count + 1
 
 	fmt.Println(s.count)
-	return fmt.Sprintf("hello %s, greet number %d", name, s.count), nil
+	return fmt.Sprintf("welcome back %s, greet number %d", name, s.count), nil
 }
 
-func GreetHandler(g Greeter) http.HandlerFunc {
+func greetHandler(g Greeter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+
 		name := r.URL.Query().Get("name")
 
-		msg, err := g.Greet(name)
-
+		msg, err := g.greet(name)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -48,19 +49,20 @@ func GreetHandler(g Greeter) http.HandlerFunc {
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	// what i want it to do is ignore requests which have a different request method from GET
-	if r.Method == "GET" {
-		w.WriteHeader(200)
-		fmt.Fprintln(w, "status: 200 (ok)")
+	if r.Method != http.MethodGet {
+		http.Error(w, "invalid request method", http.StatusMethodNotAllowed);
+		return;
 	}
+
+	w.WriteHeader(http.StatusOK);
+	fmt.Fprintln(w, "healthy API")
 }
 
 func main() {
 	service := &GreetCounter{}
-
-	http.HandleFunc("/greet", GreetHandler(service))
+	http.HandleFunc("/greet", greetHandler(service))
 	http.HandleFunc("/health", healthHandler)
 
-	http.ListenAndServe(":8080", nil)
-	fmt.Println("port listening on 8080")
+	http.ListenAndServe(":8080", nil);
+	fmt.Println("server running on port 8080");
 }
