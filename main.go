@@ -1,10 +1,28 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
 )
+
+// json helpers
+
+func JSON(status int, data interface{}) {
+	
+}
+
+// config structs
+type GreetResponse struct {
+	Name  string `json:"name"`
+	
+	Count int    `json:"count"`
+}
+
+type Request struct {
+	Name string
+}
 
 type Greeter interface {
 	greet(name string) (string, error)
