@@ -8,16 +8,25 @@ import (
 )
 
 // json helpers
+func JSON(w http.ResponseWriter, status int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
 
-func JSON(status int, data interface{}) {
-	
+	json.NewEncoder(w).Encode(data)
+}
+
+func Error(w http.ResponseWriter, status int, message string) {
+	resp := map[string]string{
+		"error": message,
+	}
+	JSON(w, status, resp)
 }
 
 // config structs
 type GreetResponse struct {
-	Name  string `json:"name"`
-	
-	Count int    `json:"count"`
+	Name string `json:"name"`
+
+	Count int `json:"count"`
 }
 
 type Request struct {
