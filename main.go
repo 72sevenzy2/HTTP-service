@@ -92,8 +92,11 @@ func healthChecker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "fully working API")
+	resp := map[string]string{
+		"message": "fully operational API",
+	}
+
+	JSON(w, http.StatusOK, resp)
 }
 
 func main() {
