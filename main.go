@@ -30,11 +30,11 @@ type GreetResponse struct {
 }
 
 type Request struct {
-	Name string
+	Name string `json:"name"`
 }
 
 type Greeter interface {
-	greet(name string) (string, error)
+	greet(name string) (string, int, error)
 }
 
 type GreetCounter struct {
@@ -42,35 +42,47 @@ type GreetCounter struct {
 	mu    sync.Mutex
 }
 
-func (s *GreetCounter) greet(name string) (string, error) {
+func (s *GreetCounter) greet(name string) (string, int, error) {
 	if name == "" {
-		return "", fmt.Errorf("name cannot be empty")
+		return "", 0, fmt.Errorf("name cannot be empty")
 	}
+
+	var count int
 
 	s.mu.Lock()
 	s.count = s.count + 1
-	count := s.count
-	defer s.mu.Unlock()
+	count = s.count
+	s.mu.Unlock()
 
-	return fmt.Sprintf("welcome back %s, this is the %d request", name, count), nil
+	return fmt.Sprintf("welcome back %s", name), count, nil
 }
 
 func greetHandler(g Greeter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		if r.Method != http.MethodPost {
+			Error(w, http.StatusMethodNotAllowed, "invalid request method")
 			return
 		}
 
-		name := r.URL.Query().Get("name")
-
-		msg, err := g.greet(name)
+		var q Request
+		err := json.NewDecoder(r.Body).Decode(&q)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			Error(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
-		fmt.Fprintln(w, msg)
+		msg, count, err := g.greet(q.Name)
+		if err != nil {
+			Error(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		resp := GreetResponse{
+			Name:  msg,
+			Count: count,
+		}
+
+		JSON(w, http.StatusOK, resp)
 	}
 }
 
