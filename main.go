@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"github.com/72sevenzy2/http-router/router"
 	"sync"
 )
 
@@ -99,14 +100,16 @@ func healthChecker(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, resp)
 }
 
+
 func main() {
 	service := &GreetCounter{}
 
-	http.HandleFunc("/greet", greetHandler(service))
-	http.HandleFunc("/health", healthChecker)
+	r := router.NewRouter()
+
+	r.Handle(http.MethodPost, "/greet", greetHandler(service), router.Logger()) // using the logger middleware which is included in my http router
 
 	fmt.Println("API working on port 8080")
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8080", r)
 	if err != nil {
 		panic(err)
 	}
